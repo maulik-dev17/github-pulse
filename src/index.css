@@ -1,0 +1,135 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --surface: #f6fafe;
+    --surface-container-lowest: #ffffff;
+    --surface-container-low: #f0f4f8;
+    --surface-container: #eaeef2;
+    --surface-container-high: #e4e9ed;
+    --surface-container-highest: #dfe3e7;
+    --surface-dim: #d6dade;
+    
+    --on-surface: #171c1f;
+    --on-surface-variant: #5c3f40;
+    
+    --primary: #b80035;
+    --primary-container: #e11d48;
+    --on-primary: #ffffff;
+    
+    --primary-fixed-dim: #ffb3b6;
+    --on-primary-fixed-variant: #920028;
+    
+    --secondary-container: #dae2fd;
+    --on-secondary-container: #5c647a;
+    
+    --outline-variant: #e5bdbe;
+  }
+
+  body {
+    background-color: var(--surface);
+    color: var(--on-surface);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    letter-spacing: -0.011em;
+    overflow-x: hidden;
+  }
+
+  /* Headlines locked-in editorial feel */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Inter', sans-serif;
+    letter-spacing: -0.02em;
+    color: var(--on-surface);
+  }
+}
+
+/* Material Symbols configuration */
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  display: inline-block;
+  vertical-align: middle;
+  line-height: 1;
+}
+
+.material-symbols-outlined.fill-1 {
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+/* Kinetic Monolith Utility Classes */
+.kinetic-gradient {
+  background: linear-gradient(135deg, #b80035 0%, #e11d48 100%);
+}
+
+.ghost-shadow {
+  box-shadow: 0 12px 40px hsla(222, 47%, 11%, 0.04);
+}
+
+.ghost-shadow-hover {
+  box-shadow: 0 20px 48px hsla(222, 47%, 11%, 0.08);
+}
+
+.ghost-border-fallback {
+  box-shadow: inset 0 0 0 1px rgba(229, 189, 190, 0.15);
+}
+
+.glass-surface {
+  background-color: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+/* 3D Spatial Perspective Utilities for Cinematic Tilt */
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+.preserve-3d {
+  transform-style: preserve-3d;
+}
+
+.backface-hidden {
+  backface-visibility: hidden;
+}
+
+/* Tactile Editorial Paper Micro-Grain Texture */
+.paper-grain {
+  background-image: radial-gradient(rgba(23, 28, 31, 0.04) 1px, transparent 0);
+  background-size: 24px 24px;
+}
+
+/* Continuous Kinetic Marquee Keyframes */
+@keyframes kineticMarquee {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-kinetic-marquee {
+  display: flex;
+  width: max-content;
+  animation: kineticMarquee 35s linear infinite;
+}
+
+.animate-kinetic-marquee:hover {
+  animation-play-state: paused;
+}
+
+/* Smooth pulse animation */
+@keyframes kineticPulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.55;
+    transform: scale(0.995);
+  }
+}
+
+.animate-kinetic-pulse {
+  animation: kineticPulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
