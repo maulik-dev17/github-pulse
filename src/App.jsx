@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import gsap from 'gsap';
-import { fetchGitHubProfile } from './services/githubApi';
+import { fetchGitHubProfile, fetchRateLimit } from './services/githubApi';
 import {
   getStoredFavorites,
   saveStoredFavorites,
@@ -12,6 +12,8 @@ import { BottomNav } from './components/BottomNav';
 import { AmbientCanvas } from './components/AmbientCanvas';
 import { KineticTicker } from './components/KineticTicker';
 import { CinematicPreloader } from './components/CinematicPreloader';
+import { TokenManagerModal } from './components/TokenManagerModal';
+import { DesignSystemInspector } from './components/DesignSystemInspector';
 import { HomeView } from './views/HomeView';
 import { ProfileView } from './views/ProfileView';
 import { FavoritesView } from './views/FavoritesView';
@@ -26,6 +28,10 @@ export function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [errorType, setErrorType] = useState('not-found');
   const [rateLimitResetDate, setRateLimitResetDate] = useState(null);
+  const [rateLimit, setRateLimit] = useState(null);
+
+  const [isTokenModalOpen, setIsTokenModalOpen] = useState(false);
+  const [isDesignInspectorOpen, setIsDesignInspectorOpen] = useState(false);
 
   const [favorites, setFavorites] = useState(getStoredFavorites);
   const [recentList, setRecentList] = useState(getStoredRecent);
@@ -42,6 +48,11 @@ export function App() {
 
   const abortControllerRef = useRef(null);
   const mainContentRef = useRef(null);
+
+  // Initialize live GitHub REST rate limit quota
+  useEffect(() => {
+    fetchRateLimit().then((rl) => setRateLimit(rl)).catch(() => {});
+  }, []);
 
   // Synchronize favorites with localStorage
   useEffect(() => {
@@ -129,15 +140,23 @@ export function App() {
     [favorites, sortBy]
   );
 
-  // Handle repository sort changes
+  // Handle repository sort changes with instant in-memory sorting
   const handleSortChange = useCallback(
     (newSort) => {
       setSortBy(newSort);
-      if (activeUser) {
-        handleSearch(activeUser.login, newSort);
+      if (activeUser && activeUser.repos) {
+        const sortedRepos = [...activeUser.repos];
+        if (newSort === 'stars') {
+          sortedRepos.sort((a, b) => b.stargazers_count - a.stargazers_count);
+        } else if (newSort === 'forks') {
+          sortedRepos.sort((a, b) => b.forks_count - a.forks_count);
+        } else if (newSort === 'updated') {
+          sortedRepos.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+        }
+        setActiveUser((prev) => (prev ? { ...prev, repos: sortedRepos } : prev));
       }
     },
-    [activeUser, handleSearch]
+    [activeUser]
   );
 
   // Toggle favorite status
@@ -184,6 +203,9 @@ export function App() {
         currentTab={currentTab}
         onSelectTab={handleSelectTab}
         favoritesCount={favorites.length}
+        onOpenTokenManager={() => setIsTokenModalOpen(true)}
+        onOpenDesignInspector={() => setIsDesignInspectorOpen(true)}
+        rateLimit={rateLimit}
       />
 
       {/* Main Content Area */}
@@ -243,9 +265,24 @@ export function App() {
             rateLimitResetDate={rateLimitResetDate}
             onSearch={handleSearch}
             isLoading={isLoading}
+            onOpenTokenManager={() => setIsTokenModalOpen(true)}
           />
         )}
       </main>
+
+      {/* Live GitHub REST Personal Access Token Modal */}
+      <TokenManagerModal
+        isOpen={isTokenModalOpen}
+        onClose={() => setIsTokenModalOpen(false)}
+        rateLimit={rateLimit}
+        onRateLimitUpdated={(updated) => setRateLimit(updated)}
+      />
+
+      {/* The Kinetic Monolith Design System & Token Audit Modal */}
+      <DesignSystemInspector
+        isOpen={isDesignInspectorOpen}
+        onClose={() => setIsDesignInspectorOpen(false)}
+      />
 
       {/* Live Terminal Velocity Marquee */}
       <KineticTicker />

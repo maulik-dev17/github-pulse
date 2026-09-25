@@ -1,5 +1,5 @@
 import React from 'react';
-import { UserX, AlertTriangle, Sparkles, RefreshCw } from 'lucide-react';
+import { UserX, AlertTriangle, Sparkles, RefreshCw, KeyRound } from 'lucide-react';
 import { SearchBar } from '../components/ui/SearchBar';
 import { Button } from '../components/ui/Button';
 
@@ -9,6 +9,7 @@ export const NotFoundView = ({
   rateLimitResetDate,
   onSearch,
   isLoading,
+  onOpenTokenManager,
 }) => {
   const isRateLimited = errorType === 'rate-limit';
 
@@ -80,8 +81,8 @@ export const NotFoundView = ({
         )}
       </p>
 
-      {/* Action Button */}
-      <div className="flex items-center gap-3 mb-10">
+      {/* Action Buttons */}
+      <div className="flex flex-wrap items-center justify-center gap-3 mb-10">
         <Button
           variant="primary"
           size="md"
@@ -90,6 +91,17 @@ export const NotFoundView = ({
         >
           {isRateLimited ? 'Retry Request' : 'Try Again'}
         </Button>
+
+        {isRateLimited && onOpenTokenManager && (
+          <Button
+            variant="surface"
+            size="md"
+            icon={<KeyRound className="w-4 h-4 text-primary" />}
+            onClick={onOpenTokenManager}
+          >
+            Add GitHub Token (5,000 req/hr)
+          </Button>
+        )}
       </div>
 
       {/* Recommended Verified Profiles */}

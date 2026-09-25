@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search } from 'lucide-react';
 
 export const SearchBar = ({
@@ -9,6 +9,11 @@ export const SearchBar = ({
   isLoading = false,
 }) => {
   const [query, setQuery] = useState(initialValue);
+
+  // Sync internal input state when prop updates (e.g. pill clicks or tab switches)
+  useEffect(() => {
+    setQuery(initialValue);
+  }, [initialValue]);
 
   const handleSubmit = (e) => {
     e.preventDefault();

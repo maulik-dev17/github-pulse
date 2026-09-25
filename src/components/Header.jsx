@@ -1,10 +1,13 @@
 import React from 'react';
-import { Star, History, Search, Home } from 'lucide-react';
+import { Star, History, Search, Home, KeyRound, Sparkles } from 'lucide-react';
 
 export const Header = ({
   currentTab,
   onSelectTab,
   favoritesCount,
+  onOpenTokenManager,
+  onOpenDesignInspector,
+  rateLimit,
 }) => {
   return (
     <header className="sticky top-0 z-40 w-full glass-surface ghost-shadow transition-all">
@@ -34,6 +37,30 @@ export const Header = ({
 
         {/* Action Controls & Navigation Shortcuts */}
         <div className="flex items-center gap-2 sm:gap-3">
+          {/* Token Manager & API Quota Indicator */}
+          <button
+            onClick={onOpenTokenManager}
+            className="px-2.5 py-1.5 rounded-md bg-surface-container-low hover:bg-surface-container-high text-secondary hover:text-on-surface flex items-center gap-1.5 text-xs font-label font-bold cursor-pointer transition-colors active:scale-95"
+            title="GitHub API Rate Limit & Personal Access Token"
+            aria-label="Manage GitHub API Token"
+          >
+            <KeyRound className="w-3.5 h-3.5 text-primary" />
+            <span className="hidden sm:inline">
+              {rateLimit ? `${rateLimit.remaining}/${rateLimit.limit}` : 'API Quota'}
+            </span>
+          </button>
+
+          {/* Design System Token Inspector Button */}
+          <button
+            onClick={onOpenDesignInspector}
+            className="p-1.5 sm:px-2.5 sm:py-1.5 rounded-md bg-surface-container-low hover:bg-surface-container-high text-secondary hover:text-on-surface flex items-center gap-1.5 text-xs font-label font-bold cursor-pointer transition-colors active:scale-95"
+            title="Inspect Design System & Tokens"
+            aria-label="Design System Tokens"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-primary" />
+            <span className="hidden lg:inline">Design System</span>
+          </button>
+
           {/* Mobile Quick Action */}
           <div className="flex md:hidden items-center gap-2">
             <button

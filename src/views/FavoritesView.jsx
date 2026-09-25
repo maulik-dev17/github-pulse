@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { Star, ArrowRight, UserCheck, Loader2 } from 'lucide-react';
-import { fetchGitHubProfile } from '../services/githubApi';
+import { fetchGitHubProfile, getCachedProfile } from '../services/githubApi';
 import { MetadataChip } from '../components/ui/MetadataChip';
 import { Button } from '../components/ui/Button';
 
@@ -10,26 +10,65 @@ export const FavoritesView = ({
   onSelectUser,
   onToggleFavorite,
 }) => {
-  const [loadedProfiles, setLoadedProfiles] = useState({});
+  // Pre-populate with any profiles already in sessionStorage cache
+  const [loadedProfiles, setLoadedProfiles] = useState(() => {
+    const initial = {};
+    favorites.forEach((username) => {
+      const cached = getCachedProfile(username);
+      if (cached) initial[username] = cached;
+    });
+    return initial;
+  });
   const [loadingUsers, setLoadingUsers] = useState({});
+  const fetchedRef = useRef({});
   const containerRef = useRef(null);
   const gridRef = useRef(null);
 
-  // Fetch live profiles for favorited users
+  // Safely fetch profiles for favorited users without rate-limit spam
   useEffect(() => {
-    favorites.forEach(async (username) => {
-      if (loadedProfiles[username] || loadingUsers[username]) return;
+    let isCancelled = false;
 
-      setLoadingUsers((prev) => ({ ...prev, [username]: true }));
-      try {
-        const liveProfile = await fetchGitHubProfile(username);
-        setLoadedProfiles((prev) => ({ ...prev, [username]: liveProfile }));
-      } catch (err) {
-        console.warn(`Could not load favorite profile for @${username}`, err);
-      } finally {
-        setLoadingUsers((prev) => ({ ...prev, [username]: false }));
+    const loadMissing = async () => {
+      for (const username of favorites) {
+        if (isCancelled) break;
+        if (fetchedRef.current[username]) continue;
+
+        // Check cache first
+        const cached = getCachedProfile(username);
+        if (cached) {
+          fetchedRef.current[username] = true;
+          if (!isCancelled) {
+            setLoadedProfiles((prev) => ({ ...prev, [username]: cached }));
+          }
+          continue;
+        }
+
+        fetchedRef.current[username] = true;
+        if (!isCancelled) {
+          setLoadingUsers((prev) => ({ ...prev, [username]: true }));
+        }
+
+        try {
+          const liveProfile = await fetchGitHubProfile(username);
+          if (!isCancelled) {
+            setLoadedProfiles((prev) => ({ ...prev, [username]: liveProfile }));
+          }
+        } catch (err) {
+          fetchedRef.current[username] = false;
+          console.warn(`Could not load favorite profile for @${username}`, err);
+        } finally {
+          if (!isCancelled) {
+            setLoadingUsers((prev) => ({ ...prev, [username]: false }));
+          }
+        }
       }
-    });
+    };
+
+    loadMissing();
+
+    return () => {
+      isCancelled = true;
+    };
   }, [favorites]);
 
   // Staggered reveal of bento cards

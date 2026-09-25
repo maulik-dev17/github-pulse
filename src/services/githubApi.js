@@ -103,6 +103,27 @@ export async function fetchRateLimit() {
 }
 
 /**
+ * Synchronously retrieves a cached profile from sessionStorage if available and valid
+ */
+export function getCachedProfile(username, sortBy = 'updated') {
+  const cleanUsername = username?.trim().toLowerCase();
+  if (!cleanUsername) return null;
+  const cacheKey = `${CACHE_PREFIX}${cleanUsername}_${sortBy}`;
+  try {
+    const cachedRaw = sessionStorage.getItem(cacheKey);
+    if (cachedRaw) {
+      const { timestamp, data } = JSON.parse(cachedRaw);
+      if (Date.now() - timestamp < CACHE_TTL_MS) {
+        return data;
+      }
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+/**
  * Fetches real, live GitHub user data, repositories, and organizations.
  * Processes language shares and stars into production-ready models.
  */
@@ -121,16 +142,9 @@ export async function fetchGitHubProfile(
 
   // Check client-side cache unless forced refresh
   if (!forceRefresh) {
-    try {
-      const cachedRaw = sessionStorage.getItem(cacheKey);
-      if (cachedRaw) {
-        const { timestamp, data } = JSON.parse(cachedRaw);
-        if (Date.now() - timestamp < CACHE_TTL_MS) {
-          return data;
-        }
-      }
-    } catch {
-      // Ignore cache parse failure
+    const cached = getCachedProfile(cleanUsername, sortBy);
+    if (cached) {
+      return cached;
     }
   }
 
@@ -159,10 +173,15 @@ export async function fetchGitHubProfile(
   const rawUser = await userRes.json();
 
   // 2. Fetch live public repositories (up to 30)
+  // GitHub /users/:username/repos only accepts sort=created|updated|pushed|full_name
+  // 'stars' and 'forks' are invalid query parameters and will be sorted client-side
+  const validApiSorts = ['created', 'updated', 'pushed', 'full_name'];
+  const apiSort = validApiSorts.includes(sortBy) ? sortBy : 'updated';
+
   let rawRepos = [];
   try {
     const reposRes = await fetch(
-      `https://api.github.com/users/${encodeURIComponent(cleanUsername)}/repos?sort=${sortBy}&per_page=30`,
+      `https://api.github.com/users/${encodeURIComponent(cleanUsername)}/repos?sort=${apiSort}&per_page=30`,
       { headers: getHeaders(), signal }
     );
     if (reposRes.ok) {
@@ -184,6 +203,7 @@ export async function fetchGitHubProfile(
       rawOrgs = await orgsRes.json();
     }
   } catch (orgsErr) {
+    if (orgsErr.name === 'AbortError') throw orgsErr;
     console.warn('Could not fetch orgs for user', orgsErr);
   }
 
@@ -217,6 +237,15 @@ export async function fetchGitHubProfile(
       isFork: r.fork,
     };
   });
+
+  // Client-side sort guarantee (especially for 'stars' and 'forks' which GitHub repos API does not support)
+  if (sortBy === 'stars') {
+    processedRepos.sort((a, b) => b.stargazers_count - a.stargazers_count);
+  } else if (sortBy === 'forks') {
+    processedRepos.sort((a, b) => b.forks_count - a.forks_count);
+  } else if (sortBy === 'updated') {
+    processedRepos.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+  }
 
   // Calculate language distribution percentage
   const totalLanguageCount = Object.values(languageCounts).reduce((a, b) => a + b, 0);
